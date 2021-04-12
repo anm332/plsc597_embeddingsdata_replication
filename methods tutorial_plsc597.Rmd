@@ -1,0 +1,583 @@
+---
+title: "methods tutorial_plsc597"
+author: "Amanda Moeller"
+date: "4/9/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Set working directory:
+```{r}
+setwd("/Users/amandamoeller/Desktop/PLSC 597 ML/Methods Tutorial")
+```
+
+
+1) Create terrorism corpus from the dataframe 
+```{r}
+library(tm) # text-mining package in R
+
+# upload the terrorism data:
+ter_df <- read.csv("/Users/amandamoeller/Desktop/SIOP21/2021_latestdata.csv")
+# upload the non-terrorism data:
+nonter_df <- 
+
+
+# put text data (df$text..raw.data.) into a corpus:
+df$rawtext <- df$Text..raw.data.
+
+corpus_ter <- corpus(df, text_field = "rawtext")
+print(corpus_ter)
+summary(corpus_ter, 10)
+
+```
+
+
+2) Clean, preprocess the data
+
+
+
+3) Then move to the replication code
+
+
+
+
+Replication code below 
+##################################
+##################################
+##################################
+
+---
+title: "README"
+output: github_document
+---
+# Word Embeddings
+This repository contains the replication materials for the article ["Word Embeddings: What works, what doesn't and how to tell the difference for applied research"](https://github.com/ArthurSpirling/EmbeddingsPaper), to be published in _The Journal of Politics_, by Pedro L. Rodriguez and Arthur Spirling.
+
+
+## Data
+
+The full dataset is 126.75 GB. It includes all 1500 embedding models we estimated along with all the files (raw and processed) required to replicate our results. You can access all this data in [this Dropbox folder](https://www.dropbox.com/sh/p2g0x7u1af0g1hv/AACSyEKbjPfo4sSZqFNGThgwa?dl=0).
+
+## Required Software and Packages
+
+`R (3.6.3)`:\
+- dplyr\
+- text2vec\
+- ggplot2\
+- quanteda\
+- read_excel\
+- purrr\
+- reticulate\
+- stringr\
+- progress\
+- pbapply\
+- data.table\
+- magrittr\
+
+
+Library packages
+```{r}
+library(dplyr)
+library(text2vec)
+library(ggplot2)
+library(quanteda)
+#install.packages("read_excel")
+#library(read_excel) 
+# (package ‘read_excel’ is not available for this version of R)
+library(purrr)
+library(reticulate)
+library(stringr)
+library(progress)
+#install.packages("pbapply")
+library(pbapply)
+library(data.table)
+library(magrittr)
+```
+
+
+`Python (3.7)`:\
+- gensim\
+
+In addition to the above packages, we created a series of custom functions to perform the analyses outlined in the paper. These are all included in: `./code/functions.R`. We have created two packages based on these functions that you can access for your own work (not used in the replication code to avoid package updates from generating errors in replication). The packages are:
+
+* [`weeval`](https://github.com/prodriguezsosa/weeval) contains all the function necessary to compute cosine similarities, average over several initializations of a given mode and compare models in terms of how they organize the semantic space.
+
+* [`turingTT`](https://github.com/prodriguezsosa/turingTT) contains the functions necessary to prepare and process the data for the Turing-style evaluation. You can check out the Shiny App [\textcolor{blue}{here}](https://prodriguezsosa.shinyapps.io/turingTT/). Note, to run the App with your own data you will need to fork or copy the code for the App. Code for the App is in the package repository under `\app` (it will not be downloaded with the package).\
+
+To install them run the following commands in R:\
+
+```{r}
+#devtools::install_github("prodriguezsosa/weeval")
+#devtools::install_github("prodriguezsosa/turingTT")
+```
+
+
+For code to run the human context word generator task (first component of the human evaluation) see the repo: [`shinyGeNNs`](https://github.com/prodriguezsosa/shinyGeNNs). You can check out the App [\textcolor{blue}{here}](https://prodriguezsosa.shinyapps.io/shinyGeNNs/).
+
+## Corpora
+
+We use the following 5 corpora (raw and processed data included in the replication file):\
+
+* `cr` = Congressional Record (hein-bound) (https://data.stanford.edu/congress_text)
+* `ps` = (UK) Parliamentary Speeches (https://www.english-corpora.org/hansard/)
+* `sp` = Spanish Legislature (https://github.com/prodriguezsosa/Text-Data)
+* `gr` = German Legislature (https://github.com/prodriguezsosa/Text-Data)
+* `sotu` = State of the Union Speeches (R's `quanteda` package)
+
+## Pre-Trained Embeddings
+
+We use the following 3 pre-trained embedding models (all three included in the replication file):\
+
+* glove = English GloVe (https://nlp.stanford.edu/projects/glove/)
+* glove_spanish = Spanish GloVe (https://github.com/dccuchile/spanish-word-embeddings)\
+* word2vec = English word2vec (Python's gensim package)
+
+## Estimation
+
+In what follows we lay out the estimation procedure for all results related to the Congressional Record corpus using GloVe (results included in the paper). Results using the other corpora or word2vec (all included in the appendix) follow a very similar procedure. Keep in mind most of the estimation was done on a high performance cluster given the sheer number of models that were estimated (1500 embedding models in total). If you only wish to replicate the figures and tables given our estimated models, jump to the next section.
+
+1. **Preprocessing:** 
+    + input: `./data/cr/raw/`
+    + output: `./data/cr/corpus.rds`
+    + code: `./code/estimation/preprocess_cr.R`
+    
+    >> New input: 'Users/amandamoeller/Desktop/PLSC 597 ML/Methods Tutorial/cr/raw/'
+    >> New output: 
+
++ code: `./code/estimation/preprocess_cr.R`
+```{r}
+## load packages
+#library(progress)
+#library(stringr)
+#library(dplyr)
+## (moved to beginning -anm 4/11)
+
+
+## set working directory to the location of the master "word_embeddings" folder
+#setwd("/Volumes/Potosi/Research/EmbeddingsProject/dataverse/word_embeddings/")
+
+# ================================
+# define paths«
+# ================================
+#in_path <- "./data/cr/raw/"
+#out_path <- "./data/cr/"
+
+# NEW PATHS: 
+in_path <- "Users/amandamoeller/Desktop/PLSC 597 ML/Methods Tutorial/cr/raw/"
+out_path <- "Users/amandamoeller/Desktop/PLSC 597 ML/Methods Tutorial/cr"
+
+# ================================
+# list of file names
+# ================================
+files <- as.list(list.files(in_path))
+files_meta <- files[grepl(pattern = "SpeakerMap", x = files)]  # meta data
+files_text <- files[grepl(pattern = "speeches", x = files)]  # text
+
+# ================================
+# load and pre-process data
+# ================================
+text_meta <- vector("list", length(files_text))
+pb <- progress_bar$new(total = length(files_text))
+for(i in 1:length(files_text)){
+  # ================================
+  # upload text
+  # ================================
+  text <- read.table(paste(in_path, files_text[[i]], sep =""), 
+                     header = FALSE, sep = "|", skip = 1,
+                     colClasses = "character", quote = "", 
+                     col.names = c("speech_id", "speech"),
+                     blank.lines.skip = TRUE, skipNul = TRUE, 
+                     strip.white = TRUE, fill = TRUE)
+  
+  # pre-process
+  text$speech <- gsub("[^[:alpha:]]", " ", text$speech) # remove all non-alpha characters
+  text$speech <- str_replace_all(text$speech, "^ +| +$|( ) +", "\\1")  # remove excess white space
+  text$speech <- tolower(text$speech)  # lowercase
+  text <- text[text$speech!="",] # remove nuls
+  
+  # ================================
+  # upload meta data
+  # ================================
+  meta <- read.table(paste(in_path, files_meta[[i]], sep =""), 
+                     header = FALSE, sep = "|", skip = 1, 
+                     colClasses = "character", quote = "", 
+                     col.names = c("speakerid", "speech_id", "lastname", "firstname", "chamber", "state", 
+                                   "gender", "party", "district", "nonvoting"), 
+                     blank.lines.skip = TRUE, skipNul = TRUE, 
+                     strip.white = TRUE, fill = TRUE)
+  
+  # add session id
+  meta$session_id <- unlist(str_split(files_meta[[i]], pattern = "_"))[1]
+  
+  # ================================
+  # merge text and meta
+  # ================================
+  text_meta[[i]] <- left_join(text, meta, by = "speech_id")  # keeps all text
+  pb$tick()
+}
+
+# bind
+corpus <- do.call(rbind, text_meta)
+
+# keep only text with meta-data
+corpus <- corpus[!is.na(corpus$party),]
+
+# save
+saveRDS(corpus, paste0(out_path, "corpus.rds"))
+
+
+```
+    
+
+2. **Estimation:** 
+    + input: `./data/cr/corpus.rds`
+    + output: `./data/cr/glove/models/`
+    + code: `./code/estimation/estimate_local_glove.R`
+    + note: `stimate_local_glove.R` estimates a single model for a given pair of hyperparameter values (window size and embeddings dimensions). For each hyperparameter pair we estimate 10 models (10 different initializations). Given 25 hyperparameter pairs, we estimate 250 GloVe models. Doing this locally is prohibitively expensive as such we used NYU's HPC to run the estimation script 250 times (10 times for each of the 25 hyperparameter pairs). The same applies to other corpora and word2vec. Notice in the `estimate_local_glove.R` file you can select the corpus you wish to use.
+
+# + input:
+```{r}
+
+```
+
+# + output:
+```{r}
+
+```
+
+
+# + code:
+```{r}
+#!/usr/bin/env Rscript
+library(text2vec)
+
+## set working directory to the location of the master "word_embeddings" folder
+
+#setwd("/Volumes/Potosi/Research/EmbeddingsProject/dataverse/word_embeddings/")
+
+
+
+# for GloVE default parameters see: https://www.rdocumentation.org/packages/text2vec/versions/0.5.1/topics/GlobalVectors
+start_time_full <- Sys.time()
+# ================================
+# arguments (used to facilitate HPC processing)
+# ================================
+#args <- c(6, 300, 1)
+args <- commandArgs(trailingOnly = TRUE)
+if(length(args)!=3) stop(paste0("Not the right number of arguments!", args))
+args <- as.integer(args)
+
+# ================================
+# choice parameters
+# ================================
+WINDOW_SIZE <- args[1]
+DIM <- args[2]
+INIT <- args[3]
+ITERS <- 100
+MIN_COUNT <- 10
+corpus <- 'cr' # corpora include: cr, ps, sotu, sp, gr
+
+# ================================
+# define paths
+# ================================
+in_path <- paste0('./data/', corpus, '/')
+out_path <- paste0('./data/', corpus, '/glove/models/')
+
+# ================================
+# load data
+# ================================
+text <- readRDS(paste0(in_path, "corpus.rds"))
+if(corpus == "cr") text <- text$speech
+
+# shuffle text
+set.seed(42L)
+text <- sample(text)
+
+# ================================
+# create vocab
+# ================================
+tokens <- space_tokenizer(text)
+rm(text)
+it <- itoken(tokens, progressbar = FALSE)
+vocab <- create_vocabulary(it)
+vocab <- prune_vocabulary(vocab, term_count_min = MIN_COUNT)  # keep only words that meet count threshold
+
+# ================================
+# create term co-occurrence matrix
+# ================================
+vectorizer <- vocab_vectorizer(vocab)
+tcm <- create_tcm(it, vectorizer, skip_grams_window = WINDOW_SIZE, skip_grams_window_context = "symmetric")
+
+# ================================
+# set model parameters
+# ================================
+glove <- GlobalVectors$new(word_vectors_size = DIM, 
+                         vocabulary = vocab, 
+                         x_max = 100,
+                         lambda = 1e-5)
+
+# ================================
+# fit model
+# ================================
+start_time_est <- Sys.time()
+word_vectors_main <- glove$fit_transform(tcm, 
+                                         n_iter = ITERS,
+                                         convergence_tol = 1e-3, 
+                                         n_check_convergence = 1L,
+                                         n_threads = RcppParallel::defaultNumThreads())
+comp_time_est <- Sys.time() - start_time_est
+
+# ================================
+# get output
+# ================================
+word_vectors_context <- glove$components
+word_vectors <- word_vectors_main + t(word_vectors_context) # word vectors
+cost_history <- glove$get_history() %>% .[["cost_history"]]  # cost history
+comp_time_full <- Sys.time() - start_time_full
+comp_time <- list(comp_time_est, comp_time_full)
+
+# ================================
+# save
+# ================================
+saveRDS(cost_history, file = paste0(out_path, "cost_history_", args[1], "_", args[2], "_", args[3], ".rds"))
+saveRDS(word_vectors, file = paste0(out_path, "word_vectors_", args[1], "_", args[2], "_", args[3], ".rds"))
+saveRDS(comp_time, file = paste0(out_path, "comp_time_", args[1], "_", args[2], "_", args[3], ".rds"))
+```
+    
+
+3. **Correlations:** 
+    + input: `./data/cr/glove/models/` and `data/pre-trained/`
+    + output: `./data/cr/glove/correlations/`
+    + code: `./code/estimation/compute_correlations.R`
+    + note: `compute_correlations.R` computes the output necessary for Figures 4 - 6. It need only be run once (i.e. it takes in all models and computes the required statistics for all hyperparameter pairs) but keep in mind it can take a couple of hours to run given it goes throught all pairwise comparisons.
+
+# + input:
+
+
+# + output:
+
+
+# + code:
+```{r}
+# ================================
+# load libraries
+# ================================
+library(text2vec)
+library(stringr)
+library(pcaPP)
+library(dplyr)
+
+## set working directory to the location of the master "word_embeddings" folder
+setwd("/Volumes/Potosi/Research/EmbeddingsProject/dataverse/word_embeddings/")
+
+## functions
+source('./code/functions.R')
+
+# ================================
+# arguments (used to facilitate HPC processing)
+# ================================
+corpus <- 'cr' # corpora include: cr, ps, sotu, sp, gr
+type <- 'politics' # cue type is either 'politics' or 'random'
+
+# ================================
+# define paths
+# ================================
+in_path_glove <- './data/pre-trained/'
+in_path_embeddings <- paste0('./data/', corpus, '/glove/models/')
+out_path <- paste0('./data/', corpus, '/glove/correlations/')
+
+# ================================
+# load pretrained
+# ================================
+if(corpus %in% c('cr', 'ps', 'sotu')) pretrained <- readRDS(paste0(in_path_glove, "glove.rds"))
+if(corpus %in% c('sp')) pretrained <- readRDS(paste0(in_path_glove, "glove_spanish.rds"))
+if(corpus %in% c('gr')) print('there were no readily available pretrained GloVe embeddings in German')
+
+# ================================
+# local embeddings file list
+# ================================
+embeddings_file <- as.list(list.files(in_path_embeddings))
+embeddings_file <- embeddings_file[grepl(pattern = "word", x = embeddings_file)]
+embeddings_model_names <- gsub("word_vectors_", "", embeddings_file) %>% gsub(".rds", "", .)
+embeddings_model_names <- gsub("_[[:digit:]]+$", "", embeddings_model_names)
+names(embeddings_file) <- embeddings_model_names
+embeddings_model_names <- unique(embeddings_model_names)
+
+# ================================
+# cues
+# ================================
+# load one embedding model to get vocab
+vocab_local <- readRDS(paste0(in_path_embeddings, embeddings_file[[1]])) %>% rownames(.)
+vocab_pretrained <- rownames(pretrained)
+vocab <- intersect(vocab_local, vocab_pretrained)
+set.seed(42L)
+cues_list <- list()
+cues_list[["random"]] <- sample(vocab, 100, replace = FALSE)
+cues_list[["politics"]] <- c("democracy", "freedom", "equality", "justice", "immigration", "abortion", "welfare", "taxes", "republican", "democrat")
+
+# select cues type
+cues <- cues_list[[type]]
+
+# ================================
+# within correlations (local-models)
+# ================================
+# initialize list to fill with results
+within_corr <- vector("list", length(embeddings_model_names)) 
+names(within_corr) <- embeddings_model_names
+for(i in embeddings_model_names){
+  # local model names
+  model_names <- embeddings_file[which(names(embeddings_file) == i)] %>% unlist() %>% unname()
+  # load all local models
+  local_embeddings <- lapply(model_names, function(x) readRDS(paste0(in_path_embeddings, x)))
+  names(local_embeddings) <- model_names
+  # get all possible model pairs
+  model_pairs <- expand.grid(model_names, model_names, stringsAsFactors = FALSE) %>% setNames(c("model1", "model2"))
+  # rm equivalent models
+  model_pairs <- model_pairs %>% filter(!(model1 == model2))
+  # rm duplicate pairs
+  model_pairs <- unique(t(apply(model_pairs, 1, sort)))
+  # compute correlations
+  corr_list <- lapply(1:nrow(model_pairs), function(x){
+    model1 <- local_embeddings[[model_pairs[x, 1]]]
+    model2 <- local_embeddings[[model_pairs[x, 2]]]
+    # compute correlations for all cues
+    mean_corr <- lapply(cues, function(y) corr_embeds(model1, model2, cue = y, type = "pearson", norm = "l2")) %>% unlist() %>% mean()
+    return(mean_corr)
+  })
+  within_corr[[i]] <- unlist(corr_list)
+  cat('done with model', i, '\n')
+}
+
+# save
+saveRDS(within_corr, file = paste0(out_path, "within_corr_", type, ".rds"))
+
+# ================================
+# avg cos similarity over initializations
+# ================================
+# initialize list to fill with results
+avg_sim_vectors <- vector("list", length(embeddings_model_names)) 
+names(avg_sim_vectors) <- embeddings_model_names
+for(i in embeddings_model_names){
+  model_inits <- embeddings_file[grepl(pattern = paste0("word_vectors_", i), x = embeddings_file)]
+  # load all initializations
+  embeds_list <- lapply(model_inits, function(x) readRDS(paste0(in_path_embeddings, x)))
+  avg_sim_vectors[[i]] <- avg_cos_similarity(embeds_list, cues, method = "cosine", norm = 'l2') # compute cosine similarity and average over all initializations
+  cat('done with model', i, '\n')
+}
+
+# add pretrained similarity vectors
+if(corpus!='gr'){ # no pretrained GloVe embeddings in german at time of writing
+pretrained_sim <- lapply(cues, function(y) cue_sim(y, pretrained, norm = "l2", rank = FALSE)) %>% do.call(rbind,.)
+rownames(pretrained_sim) <- cues
+avg_sim_vectors[["pretrained"]] <- pretrained_sim
+}
+
+# ================================
+# across correlations - pearson
+# ================================
+# get all possible model pairs
+model_pairs <- expand.grid(c(embeddings_model_names, "pretrained"), c(embeddings_model_names, "pretrained"), stringsAsFactors = FALSE) %>% setNames(c("model1", "model2"))
+# rm equivalent models
+model_pairs <- model_pairs %>% filter(!(model1 == model2))
+# rm duplicate pairs
+model_pairs <- unique(t(apply(model_pairs, 1, sort)))
+
+# compute correlations
+across_correlations <- lapply(1:nrow(model_pairs), function(x) corr_sims(sims1 = avg_sim_vectors[[model_pairs[x,1]]], sims2 = avg_sim_vectors[[model_pairs[x,2]]], type = "pearson"))
+# bind
+across_correlations <- do.call(rbind, across_correlations)
+# add model names
+across_corr_pearson <- tibble(model1 = model_pairs[, 1],
+                              model2 = model_pairs[, 2], 
+                              mean = across_correlations$mean, 
+                              se = across_correlations$se)
+
+# save
+saveRDS(across_corr_pearson, file = paste0(out_path, "across_corr_pearson_", type, ".rds"))
+
+# ================================
+# across correlations - rank (local)
+# ================================
+# compute correlations
+across_correlations <- lapply(1:nrow(model_pairs), function(x) corr_sims(sims1 = avg_sim_vectors[[model_pairs[x,1]]], sims2 = avg_sim_vectors[[model_pairs[x,2]]], type = "rank"))
+# bind
+across_correlations <- do.call(rbind, across_correlations)
+# add model names
+across_corr_rank <- tibble(model1 = model_pairs[, 1],
+                           model2 = model_pairs[, 2], 
+                           mean = across_correlations$mean, 
+                           se = across_correlations$se)
+
+# save
+saveRDS(across_corr_rank, file = paste0(out_path, "across_corr_rank_", type, ".rds"))
+
+# ================================
+# jaccard index
+# ================================
+N_set <- c(5, 10, 15, 20, 50, 100)
+across_jaccard_N <- vector("list", length(N_set))
+names(across_jaccard_N) <- as.character(N_set)
+# compute jaccard index
+for(i in N_set){
+  across_jaccard <- lapply(1:nrow(model_pairs), function(x) jaccard_sims(sims1 = avg_sim_vectors[[model_pairs[x,1]]], sims2 = avg_sim_vectors[[model_pairs[x,2]]], cue, N = i, common_vocab = FALSE))
+  # bind
+  across_jaccard <- do.call(rbind, across_jaccard)
+  # add model names
+  across_jaccard_N[[as.character(i)]] <- tibble(model1 = model_pairs[, 1],
+                                                model2 = model_pairs[, 2], 
+                                                mean = across_jaccard$mean, 
+                                                se = across_jaccard$se)
+}
+
+# save 
+saveRDS(across_jaccard_N, file = paste0(out_path, "across_jaccard_", type, ".rds"))
+
+
+
+```
+
+
+4. **Context words generation (semantic fluency task):** 
+    + App: https://prodriguezsosa.shinyapps.io/shinyGeNNs/
+    + App code: https://github.com/prodriguezsosa/shinyGeNNs
+    + input (App input data): `./data/mturk/semantic_fluency_task/input_data/`
+    + output-1 (amazon mechanical turk responses): `./data/mturk/semantic_fluency_task/output/`
+    + output-2 (processed responses): `./data/mturk/semantic_fluency_task/processed/`
+    + code-1 (prepare input data for App): `./code/estimation/prepare_sft_data.R`
+    + code-2 (process App output): `./code/estimation/process_sft.R`
+    + note: we used the `shinyGeNNs` App to have amazon mechanical turk workers generate candidate context words for our cues.
+
+5. **Turing test (triad task):** 
+    + App: https://prodriguezsosa.shinyapps.io/turingTT/
+    + App code: https://github.com/prodriguezsosa/turingTT
+    + input (App input data): `./data/mturk/triad_task/input_data/`
+    + output (amazon mechanical turk responses): `./data/mturk/triad_task/output/`
+    + code (prepare input data for App): `./code/estimation/prepare_triad_data.R`
+    + note: we used the `turingTT` App to have amazon mechanical turk workers evaluate candidate context words and compare against our human basline (generated in step 4).
+
+**Note:** follow the same procedure to replicate results for other corpora. If a script is specific to a corpus, it will the corpus acronym will be specified in the file name (e.g. `preprocess_ps.R` etc.). The following estimation scripts apply to all corpora: `estimate_local_glove.R`  `compute_correlations.R`. Note, we only estimates `word2vec` models and performed human evaluations for the Congressional Record corpus so the corresponding scripts only apply to `cr`.
+    
+## Replicate Figures and Tables
+
+In the folder `/code/figures-tables/` you will find an `.R` script for every figure and table both in the paper and the appendix. The script names match those of the corresponding figure/table.
+
+
+
+
+## Call with N:
+- 
+
+
+
+
+
+
+
+
+
+
+
+
